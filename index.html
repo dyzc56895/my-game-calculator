@@ -2,20 +2,21 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>遊戲物品與材料配方計算器</title>
+    <title>遊戲全專業物品配方計算器</title>
     <style>
-        :root { --bg: #f4f7f6; --card: #ffffff; --primary: #4a90e2; --danger: #e74c3c; --success: #2ecc71; --text: #333; --border: #ddd; }
+        :root { --bg: #f4f7f6; --card: #ffffff; --primary: #4a90e2; --danger: #e74c3c; --success: #2ecc71; --warning: #f1c40f; --text: #333; --border: #ddd; }
         body { font-family: sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; margin: 0; }
         .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; }
-        .card { background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2 { margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; color: var(--primary); }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
         .material-row { display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; margin-bottom: 10px; }
         button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-success { background: var(--success); color: white; width: 100%; margin-top: 10px; font-size: 16px; }
+        .btn-warning { background: var(--warning); color: white; padding: 5px 10px; font-size: 12px; margin-right: 5px; }
         .btn-danger { background: var(--danger); color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid var(--border); padding: 12px; text-align: left; }
@@ -25,16 +26,52 @@
         .qty-input { width: 80px !important; text-align: center; }
         .summary-box { margin-top: 30px; background: #eef5fc; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary); }
         .empty-hint { color: #999; text-align: center; padding: 40px 0; font-style: italic; }
+        .action-btns { display: flex; gap: 5px; }
+        
+        /* 分類標籤頁樣式 */
+        .category-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        .tab-btn { background: #e0e0e0; color: #555; padding: 12px 20px; font-size: 16px; border-radius: 8px; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(74,144,226,0.3); }
     </style>
 </head>
 <body>
-    <h1 style="text-align: center; color: #2c3e50;">🎮 遊戲物品與材料配方計算器</h1>
+
+    <h1 style="text-align: center; color: #2c3e50; margin-bottom: 5px;">🎮 遊戲全專業物品配方計算器</h1>
+    <p style="text-align: center; color: #666; margin-bottom: 25px;">自訂分類切換，藥品、料理、加工一網打盡！</p>
+
+    <!-- 頂部分類切換大標籤 -->
+    <div class="category-tabs" id="categoryTabs">
+        <button class="tab-btn active" onclick="switchCategory('藥品')">🧪 藥品</button>
+        <button class="tab-btn" onclick="switchCategory('料理')">🍳 料理</button>
+        <button class="tab-btn" onclick="switchCategory('加工')">🛠️ 加工</button>
+        <button class="tab-btn" onclick="switchCategory('武器製作')">⚔️ 武器製作</button>
+        <button class="tab-btn" onclick="switchCategory('防具製作')">🛡️ 防具製作</button>
+        <button class="tab-btn" onclick="switchCategory('多功能製作')">🧰 多功能製作</button>
+    </div>
+
     <div class="container">
+        <!-- 左側面板 -->
         <div style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- 新增配方表單 -->
             <div class="card">
-                <h2>➕ 新增/管理物品配方</h2>
-                <div class="form-group"><label>物品名稱：</label><input type="text" id="itemName" placeholder="例如：高級祝福繃帶"></div>
-                <div class="form-group"><label>功能/功效：</label><input type="text" id="itemFunction" placeholder="例如：持續創傷"></div>
+                <h2 id="formTitle">➕ 新增物品配方</h2>
+                <input type="hidden" id="editId" value="">
+                
+                <div class="form-group">
+                    <label>所屬專業分類：</label>
+                    <select id="itemCategory">
+                        <option value="藥品">🧪 藥品</option>
+                        <option value="料理">🍳 料理</option>
+                        <option value="加工">🛠️ 加工</option>
+                        <option value="武器製作">⚔️ 武器製作</option>
+                        <option value="防具製作">🛡️ 防具製作</option>
+                        <option value="多功能製作">🧰 多功能製作</option>
+                    </select>
+                </div>
+                
+                <div class="form-group"><label>物品名稱：</label><input type="text" id="itemName" placeholder="例如：高級祝福繃帶 或 烤肉串"></div>
+                <div class="form-group"><label>功能/功效：</label><input type="text" id="itemFunction" placeholder="例如：持續創傷 或 力量+5"></div>
+                
                 <div class="form-group">
                     <label>配方材料設定：</label>
                     <div id="matContainer">
@@ -44,21 +81,26 @@
                             <button class="btn-danger" onclick="this.parentElement.remove()">X</button>
                         </div>
                     </div>
-                    <button class="btn-primary" style="margin-top:5px; padding:5px 10px; font-size:13px;" onclick="addMatRow()">+ 增加材料種類</button>
+                    <button class="btn-primary" style="margin-top:5px; padding:5px 10px; font-size:13px;" onclick="addMatRow('', '')">+ 增加材料種類</button>
                 </div>
-                <button class="btn-success" onclick="saveRecipe()">💾 儲存配方至庫存</button>
+                <button class="btn-success" id="saveBtn" onclick="saveRecipe()">💾 儲存配方至庫存</button>
+                <button class="btn-danger" id="cancelBtn" style="display:none; width: 100%; margin-top: 5px;" onclick="resetForm()">取消編輯</button>
             </div>
+
+            <!-- 物品庫存列表 -->
             <div class="card">
-                <h2>📦 物品配方庫（勾選欲製作項目）</h2>
+                <h2>📦 <span id="listTitle">藥品</span> 配方庫（勾選欲製作項目）</h2>
                 <table>
-                    <thead><tr><th class="checkbox-cell">勾選</th><th>物品名稱</th><th>功效</th><th>材料明細</th></tr></thead>
+                    <thead><tr><th class="checkbox-cell">勾選</th><th>物品名稱</th><th>功效</th><th>材料明細</th><th>動作</th></tr></thead>
                     <tbody id="recipeTableBody"></tbody>
                 </table>
             </div>
         </div>
+
+        <!-- 右側面板 -->
         <div class="right-panel">
             <div class="card" style="min-height: 500px;">
-                <h2>🧮 智慧材料大計算表</h2>
+                <h2>🧮 <span id="calcTitle">藥品</span> 智慧材料大計算表</h2>
                 <div id="emptyHint" class="empty-hint">請在左側勾選想要製作的物品...</div>
                 <table id="calcTable" style="display: none;">
                     <thead><tr><th>已勾選名稱</th><th style="width: 120px;">輸入製作數量</th></tr></thead>
@@ -74,71 +116,64 @@
             </div>
         </div>
     </div>
+
     <script>
-        let recipes = [
-            { id: 1, name: "恢復藥水", func: "補260HP", materials: [{name: "血紅藥草", qty: 2}, {name: "新芽蘑菇", qty: 2}] },
-            { id: 2, name: "高級恢復藥水x5", func: "補1600HP", materials: [{name: "血紅藥草", qty: 6}, {name: "新芽蘑菇汁液", qty: 5}, {name: "啾啾蘑菇", qty: 2}] },
-            { id: 3, name: "耐熱繃帶", func: "持續灼傷", materials: [{name: "繃帶", qty: 5}, {name: "壯壯蘑菇粉末", qty: 3}, {name: "火苗結晶", qty: 1}] },
-            { id: 4, name: "高級祝福繃帶", func: "持續創傷", materials: [{name: "高級繃帶", qty: 5}, {name: "躲躲花粉末", qty: 6}, {name: "光輝結晶", qty: 2}] },
-            { id: 5, name: "高級封印繃帶", func: "持續創傷", materials: [{name: "高級繃帶", qty: 5}, {name: "躲躲花粉末", qty: 6}, {name: "封印結晶", qty: 2}] }
+        // 初始各分類的預設測試配方
+        let defaultRecipes = [
+            { id: 1, category: "藥品", name: "恢復藥水", func: "補260HP", materials: [{name: "血紅藥草", qty: 2}, {name: "新芽蘑菇", qty: 2}] },
+            { id: 2, category: "藥品", name: "高級恢復藥水x5", func: "補1600HP", materials: [{name: "血紅藥草", qty: 6}, {name: "新芽蘑菇汁液", qty: 5}, {name: "啾啾蘑菇", qty: 2}] },
+            { id: 3, category: "藥品", name: "耐熱繃帶", func: "持續灼傷", materials: [{name: "繃帶", qty: 5}, {name: "壯壯蘑菇粉末", qty: 3}, {name: "火苗結晶", qty: 1}] },
+            { id: 4, category: "料理", name: "美味烤肉串", func: "攻擊力+10", materials: [{name: "生肉", qty: 3}, {name: "香料", qty: 1}] },
+            { id: 5, category: "加工", name: "鐵條", func: "基礎金屬加工材料", materials: [{name: "鐵礦石", qty: 5}, {name: "煤炭", qty: 2}] },
+            { id: 6, category: "武器製作", name: "鋼鐵長劍", func: "物理攻擊+50", materials: [{name: "鐵條", qty: 4}, {name: "木材", qty: 2}] }
         ];
-        let selectedItems = {};
-        window.onload = function() { renderRecipes(); };
-        function addMatRow() {
-            const div = document.createElement('div'); div.className = 'material-row';
-            div.innerHTML = `<input type="text" class="mat-name" placeholder="材料名稱"><input type="number" class="mat-qty" placeholder="數量" min="1"><button class="btn-danger" onclick="this.parentElement.remove()">X</button>`;
-            document.getElementById('matContainer').appendChild(div);
-        }
-        function saveRecipe() {
-            const name = document.getElementById('itemName').value.trim();
-            const func = document.getElementById('itemFunction').value.trim();
-            const names = document.querySelectorAll('.mat-name'); const qtys = document.querySelectorAll('.mat-qty');
-            if(!name) return alert('請填物品名稱');
-            let mats = [];
-            for(let i=0; i<names.length; i++) {
-                if(names[i].value.trim() && parseInt(qtys[i].value) > 0) mats.push({ name: names[i].value.trim(), qty: parseInt(qtys[i].value) });
-            }
-            if(mats.length===0) return alert('請填材料');
-            recipes.push({ id: Date.now(), name: name, func: func, materials: mats });
-            renderRecipes();
-        }
-        function renderRecipes() {
-            const tbody = document.getElementById('recipeTableBody'); tbody.innerHTML = '';
-            recipes.forEach(r => {
-                let tr = document.createElement('tr');
-                tr.innerHTML = `<td class="checkbox-cell"><input type="checkbox" onchange="toggleSelect(${r.id}, this.checked)"></td><td><b>${r.name}</b></td><td>${r.func}</td><td>${r.materials.map(m=>`${m.name}x${m.qty}`).join(', ')}</td>`;
-                tbody.appendChild(tr);
-            });
-        }
-        function toggleSelect(id, chk) { chk ? selectedItems[id] = "" : delete selectedItems[id]; renderCalcTable(); }
-        function renderCalcTable() {
-            const keys = Object.keys(selectedItems);
-            document.getElementById('emptyHint').style.display = keys.length === 0 ? 'block' : 'none';
-            document.getElementById('calcTable').style.display = keys.length === 0 ? 'none' : 'table';
-            if(keys.length === 0) { document.getElementById('summaryBox').style.display = 'none'; return; }
-            const tbody = document.getElementById('calcTableBody'); tbody.innerHTML = '';
-            keys.forEach(id => {
-                let r = recipes.find(x => x.id == id);
-                let tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>${r.name}</b></td><td><input type="number" class="qty-input" placeholder="請輸入" value="${selectedItems[id]}" oninput="updateQty(${id}, this.value)"></td>`;
-                tbody.appendChild(tr);
-            });
-            calc();
-        }
-        function updateQty(id, val) { selectedItems[id] = val === "" ? "" : parseInt(val); calc(); }
-        function calc() {
-            let totals = {}; let valid = false;
-            Object.keys(selectedItems).forEach(id => {
-                let q = selectedItems[id];
-                if(q && q > 0) {
-                    valid = true;
-                    recipes.find(x => x.id == id).materials.forEach(m => { totals[m.name] = (totals[m.name] || 0) + (m.qty * q); });
+
+        let recipes = JSON.parse(localStorage.getItem('game_recipes_v2')) || defaultRecipes;
+        let currentCategory = "藥品"; // 當前選擇的分類
+        let selectedItems = {}; // 格式改為 { id: 數量 }
+
+        window.onload = function() { 
+            renderRecipes(); 
+            renderCalcTable();
+        };
+
+        // 切換分類功能
+        function switchCategory(catName) {
+            currentCategory = catName;
+            
+            // 切換按鈕高亮
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                if(btn.innerText.includes(catName)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
                 }
             });
-            document.getElementById('summaryBox').style.display = valid ? 'block' : 'none';
-            const tbody = document.getElementById('summaryTableBody'); tbody.innerHTML = '';
-            Object.keys(totals).forEach(k => { tbody.innerHTML += `<tr><td><b>${k}</b></td><td style="color:var(--danger);font-weight:bold;">${totals[k]}</td></tr>`; });
+
+            // 更新標題文字
+            document.getElementById('listTitle').innerText = catName;
+            document.getElementById('calcTitle').innerText = catName;
+            document.getElementById('itemCategory').value = catName; // 新增表單預設同步切換
+
+            renderRecipes();
+            renderCalcTable();
         }
-    </script>
-</body>
-</html>
+
+        function addMatRow(name = '', qty = '') {
+            const div = document.createElement('div'); div.className = 'material-row';
+            div.innerHTML = `<input type="text" class="mat-name" placeholder="材料名稱" value="${name}"><input type="number" class="mat-qty" placeholder="數量" min="1" value="${qty}"><button class="btn-danger" onclick="this.parentElement.remove()">X</button>`;
+            document.getElementById('matContainer').appendChild(div);
+        }
+
+        function saveRecipe() {
+            const category = document.getElementById('itemCategory').value;
+            const name = document.getElementById('itemName').value.trim();
+            const func = document.getElementById('itemFunction').value.trim();
+            const editId = document.getElementById('editId').value;
+            const names = document.querySelectorAll('.mat-name'); const qtys = document.querySelectorAll('.mat-qty');
+            
+            if(!name) return alert('請填物品名稱');
+            let mats = [];
+            for(let i=0; i<names.length; i++) {if(names[i].value.trim() && parseInt(qtys[i].value) > 0) mats.push({ name: names[i].value.trim(), qty: parseInt(qtys[i].value) });}if(mats.length===0) return alert('請填材料');if(editId) {let index = recipes.findIndex(r => r.id == editId);if(index !== -1) recipes[index] = { id: parseInt(editId), category: category, name: name, func: func, materials: mats };} else {recipes.push({ id: Date.now(), category: category, name: name, func: func, materials: mats });}localStorage.setItem('game_recipes_v2', JSON.stringify(recipes));resetForm();switchCategory(category); // 自動跳到剛才新增/編輯的那個分類}function editRecipe(id) {let r = recipes.find(x => x.id == id);if(!r) return;document.getElementById('formTitle').innerText = "✏️ 編輯物品配方";document.getElementById('editId').value = r.id;document.getElementById('itemCategory').value = r.category;document.getElementById('itemName').value = r.name;document.getElementById('itemFunction').value = r.func;document.getElementById('saveBtn').innerText = "💾 儲存修改";document.getElementById('cancelBtn').style.display = "block";const container = document.getElementById('matContainer');container.innerHTML = '';r.materials.forEach(m => addMatRow(m.name, m.qty));window.scrollTo({ top: 0, behavior: 'smooth' });}function deleteRecipe(id) {if(confirm('確定要刪除這筆配方嗎？')) {recipes = recipes.filter(r => r.id !== id);localStorage.setItem('game_recipes_v2', JSON.stringify(recipes));delete selectedItems[id];renderRecipes();renderCalcTable();}}function resetForm() {document.getElementById('formTitle').innerText = "➕ 新增物品配方";document.getElementById('editId').value = "";document.getElementById('itemCategory').value = currentCategory;document.getElementById('itemName').value = '';document.getElementById('itemFunction').value = '';document.getElementById('saveBtn').innerText = "💾 儲存配方至庫存";document.getElementById('cancelBtn').style.display = "none";document.getElementById('matContainer').innerHTML = <div class="material-row"><input type="text" class="mat-name" placeholder="材料名稱"><input type="number" class="mat-qty" placeholder="數量" min="1"><button class="btn-danger" onclick="this.parentElement.remove()">X</button></div>;}function renderRecipes() {const tbody = document.getElementById('recipeTableBody'); tbody.innerHTML = '';// 只篩選出符合當前分類的配方let filtered = recipes.filter(r => r.category === currentCategory);filtered.forEach(r => {let isChecked = selectedItems[r.id] !== undefined ? "checked" : "";let tr = document.createElement('tr');tr.innerHTML = <td class="checkbox-cell"><input type="checkbox" ${isChecked} onchange="toggleSelect(${r.id}, this.checked)"></td><td><b>${r.name}</b></td><td>${r.func}</td><td>${r.materials.map(m=>${m.name}x${m.qty}).join(', ')}</td><td class="action-btns"><button class="btn-warning" onclick="editRecipe(${r.id})">編輯</button><button class="btn-danger" style="padding: 5px 10px; font-size:12px;" onclick="deleteRecipe(${r.id})">刪除</button></td>;tbody.appendChild(tr);});}function toggleSelect(id, chk) { chk ? selectedItems[id] = (selectedItems[id] || "") : delete selectedItems[id]; renderCalcTable(); }function renderCalcTable() {// 找出目前勾選、且屬於目前分類的項目const activeKeys = Object.keys(selectedItems).filter(id => {let r = recipes.find(x => x.id == id);return r && r.category === currentCategory;});document.getElementById('emptyHint').style.display = activeKeys.length === 0 ? 'block' : 'none';document.getElementById('calcTable').style.display = activeKeys.length === 0 ? 'none' : 'table';if(activeKeys.length === 0) { document.getElementById('summaryBox').style.display = 'none'; return; }const tbody = document.getElementById('calcTableBody'); tbody.innerHTML = '';activeKeys.forEach(id => {let r = recipes.find(x => x.id == id);let tr = document.createElement('tr');tr.innerHTML = <td><b>${r.name}</b></td><td><input type="number" class="qty-input" placeholder="請輸入" value="${selectedItems[id]}" oninput="updateQty(${id}, this.value)"></td>;tbody.appendChild(tr);});calc();}function updateQty(id, val) { selectedItems[id] = val === "" ? "" : parseInt(val); calc(); }function calc() {let totals = {}; let valid = false;// 計算時也只計算目前分類下有輸入數量的項目Object.keys(selectedItems).forEach(id => {let r = recipes.find(x => x.id == id);if(r && r.category === currentCategory) {let q = selectedItems[id];if(q && q > 0) {valid = true;r.materials.forEach(m => { totals[m.name] = (totals[m.name] || 0) + (m.qty * q); });}}});document.getElementById('summaryBox').style.display = valid ? 'block' : 'none';const tbody = document.getElementById('summaryTableBody'); tbody.innerHTML = '';Object.keys(totals).forEach(k => { tbody.innerHTML += <tr><td><b>${k}</b></td><td style="color:var(--danger);font-weight:bold;">${totals[k]}</td></tr>; });}
+
